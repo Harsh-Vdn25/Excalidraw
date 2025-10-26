@@ -6,7 +6,7 @@ export function decodeToken(req: Request, res: Response, next: NextFunction) {
   if (!BearerToken) {
     return;
   }
-  const token = BearerToken.split("")[1];
+  const token = BearerToken.split(" ")[1];
   if (!token) {
     return;
   }

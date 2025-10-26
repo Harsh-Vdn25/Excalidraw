@@ -15,7 +15,6 @@ export async function Signup(req: Request, res: Response) {
         name:name,
       },
     });
-    console.log(response);
     if(!response){
         return res.json({error:"Try again"})
     }
@@ -62,4 +61,60 @@ export async function Signin(req: Request, res: Response) {
   }
 }
 
-export async function createRoom(req: Request, res: Response) {}
+export async function createRoom(req: Request, res: Response) {
+    const roomName=req.body.roomName;
+    const userId=(req as any).userId;
+    if(!userId){
+      return res.status(401).json({message:"User not authenticated"})
+    }
+    try{
+        const roomCreated=await prismaClient.room.create({
+            data:{
+                roomname:roomName,
+                adminId:userId,
+            },
+        })
+        res.status(200).json({message:"Created the room successfully"})
+    }catch(err){
+      res.status(500).json({error:"Failed to create the room"})
+    }
+}
+
+export async function getChats(req:Request,res:Response){
+  const roomId=Number(req.params.roomId);
+  if(!roomId){
+    res.json({message:"RoomId not found"})
+    return ;
+  }
+  try{
+    const Chats=await prismaClient.chat.findMany({
+      where:{roomId},
+      orderBy:{
+        id:"desc"
+      },
+      take:50
+    })
+    if(!Chats){
+      return res.json({message:"No chats found"})
+    }
+    res.status(200).json(Chats)
+  }catch(err){
+    res.status(500).json({error:"Failed to get the chats"});
+  }
+}
+
+export async function getroomName(req:Request,res:Response){
+  const slug=req.params.slug;
+  try{
+    const response=await prismaClient.room.findUnique({
+      where:{roomname:slug}
+    })
+    if(!response){
+      res.json({message:""})
+      return ;
+    }
+    res.status(200).json({roomId:response.id})
+  }catch(err){
+    res.status(200).json({error:"Failed to fetch the roomName"})
+  }
+}
