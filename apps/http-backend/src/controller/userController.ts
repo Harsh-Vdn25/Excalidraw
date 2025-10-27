@@ -97,6 +97,7 @@ export async function getChats(req:Request,res:Response){
     if(!Chats){
       return res.json({message:"No chats found"})
     }
+    console.log(Chats);
     res.status(200).json(Chats)
   }catch(err){
     res.status(500).json({error:"Failed to get the chats"});
