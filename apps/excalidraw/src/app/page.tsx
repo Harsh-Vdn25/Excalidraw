@@ -1,11 +1,12 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { Card } from "@repo/ui/card";
 import { Pen, Share2, Layers, Zap, Github, Twitter, Users, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
+  const router=useRouter()
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <nav className="border-b bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm sticky top-0 z-50">
@@ -27,10 +28,11 @@ export default function Home() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" className="hidden sm:inline-flex">
+              <Button variant="ghost" className="hidden sm:inline-flex" onClick={()=>router.push('/signin')}>
                 Sign In
               </Button>
-              <Button className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
+              <Button className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900"
+              onClick={()=>router.push('/signup')}>
                 Get Started
               </Button>
             </div>

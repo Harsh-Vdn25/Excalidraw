@@ -38,13 +38,7 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
     clicked = false;
     const width=e.clientX-startX;
     const height=e.clientY-startY;
-    existingShapes.push({
-        type:'rect',
-        x:startX,
-        y:startY,
-        height,
-        width
-    })
+    
     socket.send(JSON.stringify({
       type:"chat",
       roomId:roomId,
@@ -57,9 +51,17 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
       }
     }))
     socket.onmessage=(event)=>{
+      const messageObj=JSON.parse(event.data)
+      const shape=messageObj.message;
+      existingShapes.push({
+        type:shape.type,
+        x:shape.x,
+        y:shape.y,
+        height:shape.height,
+        width:shape.width
+    })
       paintCanvas(existingShapes,canvas,ctx);
     }
-    
   });
 
   canvas.addEventListener("mousemove", (e) => {
@@ -68,7 +70,6 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
     }
     const width = (e.clientX - startX);
     const length = (e.clientY - startY);
-    
     
     paintCanvas(existingShapes,canvas,ctx);
     ctx.strokeRect(startX, startY, width, length);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef,useState } from "react";
 import initDraw from "../draw/page";
 import { WS_URL } from "../../../config";
 
@@ -8,7 +8,7 @@ export type shape = "rect" | "circle";
 export default function CanvasPage({ roomId }: { roomId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
-
+  const [shapeType,setShapeType]=useState('rect');
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -35,7 +35,7 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
   }
   return (
     <div className="w-screen h-screen bg-gray-100 ">
-      <canvas ref={canvasRef} width={1070} height={700} />
+      <canvas ref={canvasRef} width={1070} height={700}/>
     </div>
   );
 }
