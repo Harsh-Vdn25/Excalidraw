@@ -1,8 +1,8 @@
 "use client"
 import axios from "axios";
 import { BACKEND_URL } from "../../../config";
-import { RefObject } from "react";
-
+import { useContext } from "react";
+import { ShapeContext } from "../context/ShapeContext";
 interface RectType{
     type:"rect";
     x:number;
@@ -17,7 +17,18 @@ interface CircleType{
     radius:number;
 }
 type Shape=CircleType|RectType;
-export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,socket:WebSocket) {
+interface initDrawIpType{
+  canvas:HTMLCanvasElement;
+  roomId:string;
+  socket:WebSocket;
+}
+
+export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
+  const context=useContext(ShapeContext);
+  if(!context){
+    throw new Error('');
+  }
+  const {shapeType,setShapeType}=context;
   const ctx=canvas.getContext('2d')
   let existingShapes:Shape[]=await getExistingMessages(roomId);
   if(!ctx)return;
@@ -25,6 +36,7 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
   let startX = 0;
   let startY = 0;
   let clicked = false;
+  let radius=0;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -38,8 +50,22 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
     clicked = false;
     const width=e.clientX-startX;
     const height=e.clientY-startY;
-    
-    socket.send(JSON.stringify({
+    if(shapeType){
+      radius=Math.sqrt((width^2)+(height^2))/2;
+    }
+    if(shapeType==='circle'){
+      socket.send(JSON.stringify({
+        type:"chat",
+      roomId:roomId,
+      message:{
+        type:'circle',
+        centerX:startX,
+        centerY:startY,
+        radius:radius
+      }
+      }))
+    }else{
+      socket.send(JSON.stringify({
       type:"chat",
       roomId:roomId,
       message:{
@@ -50,16 +76,27 @@ export default async function initDraw(canvas: HTMLCanvasElement,roomId:string,s
         width
       }
     }))
+    }
+    
     socket.onmessage=(event)=>{
       const messageObj=JSON.parse(event.data)
       const shape=messageObj.message;
-      existingShapes.push({
+      if(shape.type==='rect'){
+        existingShapes.push({
         type:shape.type,
         x:shape.x,
         y:shape.y,
         height:shape.height,
         width:shape.width
     })
+      }else{
+        existingShapes.push({
+        type:shape.type,
+        centerX:shape.centerX,
+        centerY:shape.centerY,
+        radius:shape.radius
+    })
+      }
       paintCanvas(existingShapes,canvas,ctx);
     }
   });
@@ -84,6 +121,9 @@ function paintCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasR
     existingShapes.map((shape:Shape)=>{
         if(shape.type==='rect'){
             ctx.strokeRect(shape.x,shape.y,shape.width,shape.height);
+        }else{
+          ctx.beginPath();
+          ctx.arc(shape.centerX,shape.centerY,shape.radius,0,2*Math.PI);
         }
     })
 }
