@@ -1,8 +1,6 @@
 "use client"
 import axios from "axios";
 import { BACKEND_URL } from "../../../config";
-import { useContext } from "react";
-import { ShapeContext } from "../context/ShapeContext";
 interface RectType{
     type:"rect";
     x:number;
@@ -21,14 +19,11 @@ interface initDrawIpType{
   canvas:HTMLCanvasElement;
   roomId:string;
   socket:WebSocket;
+  shapeType:'circle'|'rect';
 }
 
-export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
-  const context=useContext(ShapeContext);
-  if(!context){
-    throw new Error('');
-  }
-  const {shapeType,setShapeType}=context;
+export default async function initDraw({canvas,roomId,socket,shapeType}:initDrawIpType) {
+
   const ctx=canvas.getContext('2d')
   let existingShapes:Shape[]=await getExistingMessages(roomId);
   if(!ctx)return;
@@ -40,20 +35,17 @@ export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  canvas.addEventListener("mousedown", (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
-    clicked = true;
-  });
-
-  canvas.addEventListener("mouseup", (e) => {
+  
+  const handleMouseUp=(e:MouseEvent)=>{
     clicked = false;
     const width=e.clientX-startX;
     const height=e.clientY-startY;
-    if(shapeType){
-      radius=Math.sqrt((width^2)+(height^2))/2;
+    if(shapeType==='circle'){
+      radius=Math.sqrt((width**2)+(height**2))/2;
     }
     if(shapeType==='circle'){
+      const centerX=startX+width/2;
+      const centerY=startY+height/2;
       socket.send(JSON.stringify({
         type:"chat",
       roomId:roomId,
@@ -64,7 +56,8 @@ export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
         radius:radius
       }
       }))
-    }else{
+    }
+    if(shapeType==='rect'){
       socket.send(JSON.stringify({
       type:"chat",
       roomId:roomId,
@@ -77,7 +70,6 @@ export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
       }
     }))
     }
-    
     socket.onmessage=(event)=>{
       const messageObj=JSON.parse(event.data)
       const shape=messageObj.message;
@@ -99,22 +91,49 @@ export default async function initDraw({canvas,roomId,socket}:initDrawIpType) {
       }
       paintCanvas(existingShapes,canvas,ctx);
     }
-  });
-
-  canvas.addEventListener("mousemove", (e) => {
+  }
+  const handleMouseDown=(e:MouseEvent)=>{
+    startX = e.clientX;
+    startY = e.clientY;
+    clicked = true;
+  }
+  const handleMouseMove=(e:MouseEvent)=>{
     if (!clicked) {
       return;
     }
     const width = (e.clientX - startX);
-    const length = (e.clientY - startY);
-    
+    const height = (e.clientY - startY);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "white";
     paintCanvas(existingShapes,canvas,ctx);
-    ctx.strokeRect(startX, startY, width, length);
-  });
+    if(shapeType==='rect'){
+            ctx.strokeRect(startX,startY,width,height);
+    }else{
+      ctx.strokeStyle = "white";
+      const centerX=startX+width/2;
+      const centerY=startY+height/2;
+      ctx.beginPath();
+      radius=Math.sqrt((width**2)+(height**2))/2;
+      ctx.arc(centerX,centerY,radius,0,2*Math.PI);
+      ctx.stroke();
+    }
+  }
+
+  canvas.addEventListener("mouseup", handleMouseUp);
+  canvas.addEventListener("mousedown",handleMouseDown);
+  canvas.addEventListener("mousemove",handleMouseMove);
+
+  return ()=>{
+    canvas.removeEventListener('mouseup',handleMouseUp);
+    canvas.removeEventListener('mousemove',handleMouseMove);
+    canvas.removeEventListener('mousedown',handleMouseDown);
+  }
 }
 
 function paintCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D){
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "white";
@@ -124,6 +143,7 @@ function paintCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasR
         }else{
           ctx.beginPath();
           ctx.arc(shape.centerX,shape.centerY,shape.radius,0,2*Math.PI);
+          ctx.stroke();
         }
     })
 }

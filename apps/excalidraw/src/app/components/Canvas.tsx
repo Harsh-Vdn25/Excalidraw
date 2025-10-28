@@ -15,6 +15,15 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
     throw new Error('')
   }
   const {shapeType,setShapeType}=context;
+  useEffect(()=>{
+    if(!socketRef.current || !canvasRef.current)return;
+    const socket=socketRef.current;
+    const canvas=canvasRef.current;
+    const setup=async()=>{
+      await initDraw({canvas,roomId,socket,shapeType})
+    }
+    setup();
+  },[roomId,shapeType])
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -29,11 +38,7 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
         })
       );
     };
-    const setup = async () => {
-      await initDraw({canvas, roomId,socket});
-    };
-
-    setup();
+    
   }, [roomId]);
 
   if (!socketRef) {
