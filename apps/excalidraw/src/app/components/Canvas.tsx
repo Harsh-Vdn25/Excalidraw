@@ -1,31 +1,33 @@
 "use client";
 
-import { useEffect, useRef,useContext } from "react";
+import { useEffect, useRef,useContext, useState } from "react";
 import { ShapeContext } from "../context/ShapeContext";
-import initDraw from "../draw/page";
 import { WS_URL } from "../../../config";
 import { CircleIcon } from "@repo/ui/CircleIcon";
 import { SquareIcon } from "@repo/ui/SquareIcon";
+import { Game } from "../draw/Game";
 export type shape = "rect" | "circle";
+
+interface windowSizeType{
+  width:number|undefined;
+  height:number|undefined
+}
 export default function CanvasPage({ roomId }: { roomId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const context=useContext(ShapeContext);
+  const [game,setGame]=useState<Game>();
+  const [windowSize,setWindowSize]=useState<windowSizeType>({
+    width: undefined,
+    height:undefined
+  })
+
   if(!context){
     throw new Error('')
   }
   const {shapeType,setShapeType}=context;
   useEffect(()=>{
-    if(!socketRef.current || !canvasRef.current)return;
-    const socket=socketRef.current;
-    const canvas=canvasRef.current;
-    const setup=async()=>{
-      await initDraw({canvas,roomId,socket,shapeType})
-    }
-    setup();
-  },[roomId,shapeType])
-  useEffect(() => {
-    if (!canvasRef.current) return;
+    if(!canvasRef.current)return;
     const canvas = canvasRef.current;
     const ws = new WebSocket(WS_URL);
     socketRef.current = ws;
@@ -38,17 +40,34 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
         })
       );
     };
-    
-  }, [roomId]);
+    const g=new Game(canvas,roomId,socket,shapeType);
+    setGame(g);
+    return ()=>{
+      g.destroy();
+    }
+  },[canvasRef])
+
+  useEffect(()=>{
+    function handleResize(){
+      setWindowSize({
+        width:window.innerWidth,
+        height:window.innerHeight
+      })
+    }
+    window.addEventListener('resize',handleResize);
+    return ()=>{
+      window.removeEventListener('resize',handleResize);
+    }
+  },[])
 
   if (!socketRef) {
     return <div>Connecting to server....</div>;
   }
   return (
     <div className="relative w-screen h-screen bg-gray-100">
-  <canvas ref={canvasRef} width={1070} height={900} />
+  <canvas ref={canvasRef} width={windowSize.width} height={windowSize.height} />
 
-  <div className="absolute top-4 left-4 flex items-center gap-2 bg-white shadow-md rounded-lg p-1 border border-gray-200">
+  <div className="absolute top-10 right-10 flex items-center gap-2 bg-white shadow-md rounded-lg p-1 border border-gray-400">
     <button
       onClick={() => {setShapeType("circle")}}
       className={`p-2 rounded hover:bg-gray-100 transition ${
