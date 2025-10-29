@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef,useContext, useState } from "react";
-import { ShapeContext } from "../context/ShapeContext";
+import { useEffect, useRef, useState } from "react";
 import { WS_URL } from "../../../config";
 import { CircleIcon } from "@repo/ui/CircleIcon";
 import { SquareIcon } from "@repo/ui/SquareIcon";
@@ -15,17 +14,13 @@ interface windowSizeType{
 export default function CanvasPage({ roomId }: { roomId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
-  const context=useContext(ShapeContext);
+  const [selectedTool,setSelectedTool]=useState<shape>('rect');
   const [game,setGame]=useState<Game>();
   const [windowSize,setWindowSize]=useState<windowSizeType>({
     width: undefined,
     height:undefined
   })
 
-  if(!context){
-    throw new Error('')
-  }
-  const {shapeType,setShapeType}=context;
   useEffect(()=>{
     if(!canvasRef.current)return;
     const canvas = canvasRef.current;
@@ -48,8 +43,8 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
   },[canvasRef])
 
   useEffect(()=>{
-    game?.setTool(shapeType);
-  },[shapeType])
+    game?.setTool(selectedTool);
+  },[selectedTool])
 
   useEffect(()=>{
     function handleResize(){
@@ -73,18 +68,18 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
 
   <div className="absolute top-10 left-10 flex items-center gap-2 bg-white shadow-md rounded-lg p-1 border border-gray-400">
     <button
-      onClick={() => {setShapeType("circle")}}
+      onClick={() => {setSelectedTool("circle")}}
       className={`p-2 rounded hover:bg-gray-100 transition ${
-        shapeType === "circle" ? "bg-blue-100 ring-2 ring-blue-400" : ""
+        selectedTool === "circle" ? "bg-blue-100 ring-2 ring-blue-400" : ""
       }`}
       title="Draw Circle"
     >
       <CircleIcon />
     </button>
     <button
-      onClick={() => setShapeType("rect")}
+      onClick={() => setSelectedTool("rect")}
       className={`p-2 rounded hover:bg-gray-100 transition ${
-        shapeType === "rect" ? "bg-blue-100 ring-2 ring-blue-400" : ""
+        selectedTool === "rect" ? "bg-blue-100 ring-2 ring-blue-400" : ""
       }`}
       title="Draw Rectangle"
     >
