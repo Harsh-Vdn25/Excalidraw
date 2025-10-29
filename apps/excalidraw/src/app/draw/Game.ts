@@ -24,6 +24,8 @@ export class Game {
   private clicked:boolean=false;
   private startX=0;
   private startY=0;
+  private centerX=0;
+  private centerY=0;
   private radius=0;
   private selectedTool:shape='rect';
   private socket;
@@ -42,9 +44,6 @@ export class Game {
     this.selectedTool=selectedTool;
   }
   async init() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.fillStyle = "black";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.existingShapes = await getExistingMessages(this.roomId);
     this.paintCanvas();
   }
@@ -83,7 +82,6 @@ export class Game {
   }
 
     handleMouseMove=(e:MouseEvent)=>{
-      console.log(this.selectedTool);
         if (!this.clicked) {
         return;
         }
@@ -93,11 +91,11 @@ export class Game {
         if(this.selectedTool==='rect'){
             this.ctx.strokeRect(this.startX,this.startY,width,height);
         }else{
-        const centerX=this.startX+width/2;
-        const centerY=this.startY+height/2;
+        this.centerX=this.startX+width/2;
+        this.centerY=this.startY+height/2;
         this.ctx.beginPath();
         this.radius=Math.sqrt((width**2)+(height**2))/2;
-        this.ctx.arc(centerX,centerY,this.radius,0,2*Math.PI);
+        this.ctx.arc(this.centerX,this.centerY,this.radius,0,2*Math.PI);
         this.ctx.stroke();
         }
   }
@@ -112,15 +110,13 @@ export class Game {
         this.radius=Math.sqrt((width**2)+(height**2))/2;
         }
         if(this.selectedTool==='circle'){
-        const centerX=this.startX+width/2;
-        const centerY=this.startY+height/2;
         this.socket.send(JSON.stringify({
             type:"chat",
             roomId:this.roomId,
             message:{
             type:'circle',
-            centerX:this.startX,
-            centerY:this.startY,
+            centerX:this.centerX,
+            centerY:this.centerY,
             radius:this.radius
         }
         }))
@@ -150,11 +146,12 @@ export class Game {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "black";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.strokeStyle = "white";
     this.existingShapes.map((shape: Shape) => {
       if (shape.type === "rect") {
+        this.ctx.strokeStyle = "blue";
         this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
       } else {
+        this.ctx.strokeStyle='red'
         this.ctx.beginPath();
         this.ctx.arc(
           shape.centerX,
@@ -173,5 +170,6 @@ export class Game {
     this.canvas.removeEventListener('mouseup',this.handleMouseUp);
     this.canvas.removeEventListener('mousemove',this.handleMouseMove);
     this.canvas.removeEventListener('mousedown',this.handleMouseDown);
+    this.socket?.removeEventListener('message',this.initHandlers);
   }
 }

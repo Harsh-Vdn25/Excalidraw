@@ -32,7 +32,6 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
     const ws = new WebSocket(WS_URL);
     socketRef.current = ws;
     const socket = socketRef.current;
-    console.log(socketRef.current);
     socket.onopen = (e) => {
       socket.send(
         JSON.stringify({
@@ -41,7 +40,6 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
         })
       );
     };
-    socket.onmessage=(e)=>{console.log(e.data)}
     const g=new Game(canvas,roomId,socketRef);
     setGame(g);
     return ()=>{
@@ -52,6 +50,7 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
   useEffect(()=>{
     game?.setTool(shapeType);
   },[shapeType])
+
   useEffect(()=>{
     function handleResize(){
       setWindowSize({
@@ -72,7 +71,7 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
     <div className="relative w-screen h-screen bg-gray-100">
   <canvas ref={canvasRef} width={windowSize.width} height={windowSize.height} />
 
-  <div className="absolute top-10 right-10 flex items-center gap-2 bg-white shadow-md rounded-lg p-1 border border-gray-400">
+  <div className="absolute top-10 left-10 flex items-center gap-2 bg-white shadow-md rounded-lg p-1 border border-gray-400">
     <button
       onClick={() => {setShapeType("circle")}}
       className={`p-2 rounded hover:bg-gray-100 transition ${
