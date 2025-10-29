@@ -1,3 +1,4 @@
+import { RefObject } from "react";
 import { type shape } from "../components/Canvas";
 import { getExistingMessages } from "./http";
 interface RectType {
@@ -25,27 +26,35 @@ export class Game {
   private startY=0;
   private radius=0;
   private selectedTool:shape='rect';
-socket: WebSocket;
+  private socket;
   
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket,selectedTool:shape) {
+  constructor(canvas: HTMLCanvasElement, roomId: string, socketRef: RefObject<WebSocket|null>) {
     this.canvas = canvas;
     this.roomId = roomId;
     this.ctx = canvas.getContext("2d")!;
     this.existingShapes = [];
     this.init();
+    this.socket = socketRef.current;
+    this.initMouseHandlers();
     this.initHandlers();
-    this.socket = socket;
   }
-
+  setTool(selectedTool:shape){
+    this.selectedTool=selectedTool;
+  }
   async init() {
-    this.existingShapes = await getExistingMessages(this.roomId);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "black";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.existingShapes = await getExistingMessages(this.roomId);
+    this.paintCanvas();
   }
 
   initHandlers() {
+    if(!this.socket){
+      return;
+    }
     this.socket.onmessage = (event) => {
+      console.log(event.data);
       const messageObj = JSON.parse(event.data);
       const shape = messageObj.message;
       if (shape.type === "rect") {
@@ -74,18 +83,15 @@ socket: WebSocket;
   }
 
     handleMouseMove=(e:MouseEvent)=>{
+      console.log(this.selectedTool);
         if (!this.clicked) {
         return;
         }
         const width = (e.clientX - this.startX);
         const height = (e.clientY - this.startY);
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.fillStyle = "black";
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.strokeStyle = "white";
         this.paintCanvas();
         if(this.selectedTool==='rect'){
-                this.ctx.strokeRect(this.startX,this.startY,width,height);
+            this.ctx.strokeRect(this.startX,this.startY,width,height);
         }else{
         const centerX=this.startX+width/2;
         const centerY=this.startY+height/2;
@@ -98,6 +104,7 @@ socket: WebSocket;
 
   
     handleMouseUp=(e:MouseEvent)=>{
+      if(!this.socket)return;
         this.clicked = false;
         const width=e.clientX-this.startX;
         const height=e.clientY-this.startY;
@@ -109,8 +116,8 @@ socket: WebSocket;
         const centerY=this.startY+height/2;
         this.socket.send(JSON.stringify({
             type:"chat",
-        roomId:this.roomId,
-        message:{
+            roomId:this.roomId,
+            message:{
             type:'circle',
             centerX:this.startX,
             centerY:this.startY,
@@ -157,6 +164,7 @@ socket: WebSocket;
           2 * Math.PI
         );
         this.ctx.stroke();
+        this.ctx.closePath();
       }
     });
   }

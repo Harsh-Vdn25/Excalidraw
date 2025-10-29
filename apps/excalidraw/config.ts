@@ -1,2 +1,2 @@
 export const BACKEND_URL='http://localhost:3001/api/v1/user'
-export const WS_URL="ws://localhost:5001/?Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE4MWZkYmMzLTA0YzMtNDk3OC04YWYzLTQzYjVkM2Y3MjNjYyIsImlhdCI6MTc2MTM5OTcxOH0.DmNqR14svRcnh2DtbtGiw9hPAu5FiGY4nDyP78y-U2k"
+export const WS_URL="ws://localhost:5001?Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE4MWZkYmMzLTA0YzMtNDk3OC04YWYzLTQzYjVkM2Y3MjNjYyIsImlhdCI6MTc2MTc0MjE5MX0.-x9Rbv68-ZAHj2fKE83yHY9L1xQ_nIuBZq2NLofuYiM"

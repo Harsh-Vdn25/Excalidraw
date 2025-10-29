@@ -32,7 +32,8 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
     const ws = new WebSocket(WS_URL);
     socketRef.current = ws;
     const socket = socketRef.current;
-    socket.onopen = () => {
+    console.log(socketRef.current);
+    socket.onopen = (e) => {
       socket.send(
         JSON.stringify({
           type: "join_room",
@@ -40,13 +41,17 @@ export default function CanvasPage({ roomId }: { roomId: string }) {
         })
       );
     };
-    const g=new Game(canvas,roomId,socket,shapeType);
+    socket.onmessage=(e)=>{console.log(e.data)}
+    const g=new Game(canvas,roomId,socketRef);
     setGame(g);
     return ()=>{
       g.destroy();
     }
   },[canvasRef])
 
+  useEffect(()=>{
+    game?.setTool(shapeType);
+  },[shapeType])
   useEffect(()=>{
     function handleResize(){
       setWindowSize({

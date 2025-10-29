@@ -35,12 +35,12 @@ wss.on("connection", (socket, request) => {
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("Token") || "";
   const userId = CheckUser(token);
-
+  console.log(userId);
   if (!userId) {
     socket.close();
     return;
   }
-
+  socket.send(JSON.stringify("Joined"))
   users.push({
     socket,
     rooms: [],
