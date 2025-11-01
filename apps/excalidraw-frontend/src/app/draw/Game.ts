@@ -14,7 +14,16 @@ interface CircleType {
   centerY: number;
   radius: number;
 }
-type shapeType = RectType | CircleType;
+interface CoordinateType{
+  x:number;
+  y:number;
+}
+interface PencilType{
+  type:"pencil",
+  coordinates:CoordinateType[];
+}
+
+type shapeType = RectType | CircleType|PencilType;
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -29,11 +38,12 @@ export class Game {
   private radius = 0;
   private selectedTool: shape = "rect";
   private socket;
+  private points:CoordinateType[]=[];
+  private pointSize=3;
   constructor(
     canvas: HTMLCanvasElement,
     roomId: number,
-    socketRef: RefObject<WebSocket | null>,
-    selectedTool: string
+    socketRef: RefObject<WebSocket | null>
   ) {
     this.canvas = canvas;
     this.roomId = roomId;
@@ -86,7 +96,19 @@ export class Game {
       this.calculateCircleParams(width,height);
       this.ctx.beginPath();
       this.ctx.arc(this.centerX, this.centerY, this.radius, 0, 2 * Math.PI);
+      this.ctx.stroke();
       this.ctx.closePath();
+    }
+    if(this.selectedTool==='pencil'){
+      const x=e.clientX;
+      const y=e.clientY;
+      this.points.push({x,y})
+      this.ctx.fillStyle='green';
+      this.points.map((point)=>{
+        this.ctx.beginPath();
+        this.ctx.arc(point.x,point.y,this.pointSize,0,2*Math.PI,true);
+        this.ctx.fill();
+      })
     }
   }
   handleMouseUp=(e: MouseEvent)=> {
@@ -119,6 +141,17 @@ export class Game {
           },
         }));
     }
+    if(this.selectedTool==='pencil'){
+      this.socket?.send(JSON.stringify({
+        type:"draw",
+        roomId:this.roomId,
+        shapeObj:{
+          type:"pencil",
+          coordinates:this.points
+        }
+      }))
+      this.points=[];
+    }
     this.paintCanvas();
   }
   
@@ -131,7 +164,7 @@ export class Game {
         if (shape.type === "rect") {
         this.ctx.strokeStyle = "blue";
         this.ctx.strokeRect(shape.startX, shape.startY, shape.width, shape.height);
-      } else {
+      } else if(shape.type==='circle') {
         this.ctx.strokeStyle='red'
         this.ctx.beginPath();
         this.ctx.arc(
@@ -143,6 +176,14 @@ export class Game {
         );
         this.ctx.stroke();
         this.ctx.closePath();
+      }else{
+        this.ctx.fillStyle='green';
+        console.log(shape);
+        shape.coordinates.map((point)=>{
+        this.ctx.beginPath();
+        this.ctx.arc(point.x,point.y,this.pointSize,0,2*Math.PI,true);
+        this.ctx.fill();
+      })
       }
     })
   }
@@ -159,4 +200,5 @@ export class Game {
       this.centerY = this.startY + height / 2;
       this.radius = Math.sqrt(width ** 2 + height ** 2) / 2;
   }
+
 }
