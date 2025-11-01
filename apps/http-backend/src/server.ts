@@ -1,14 +1,23 @@
-import express from 'express';
+import express from 'express'; 
+import { userRouter } from './routes/userRoute';
+import {credentials} from '@repo/backend-common/config'
 import cors from 'cors';
-import { userRouter } from './Router/userRouter';
+import { roomRouter } from './routes/roomRoute';
 const app=express();
-app.use(express.json());
 const corsOptions={
     origin:"http://localhost:3000"
 }
-app.use(cors(corsOptions))
-app.use('/api/v1/user',userRouter);
+const port=Number(credentials.HTTP_PORT);
 
-app.listen(3001,()=>{
-    console.log("server is listening on port 3001");
+app.use(express.json());
+app.use(cors(corsOptions));
+
+app.use('/api/user',userRouter);
+app.use('/api/room',roomRouter);
+
+if(!port){
+    throw new Error('Invalid port number')
+}
+app.listen(port,()=>{
+    console.log(`App is listening on port ${port}`)
 })

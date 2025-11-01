@@ -1,14 +1,18 @@
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-// function getRequired(name: string) {
-//     const value = process.env[name];
-//     if (!value) throw new Error("The env folder doesnt have the asked value");
-//     return value;
-// }
-
-export const requiredInfo = {
-    SERVER_PORT:3001,
-    JWT_SECRET:'iamlearningtocode',
-    SOCKET_PORT: 8080,
-};
+const path=require('path');
+require('dotenv').config({path:'../../.env'});
+function getRequired(name:string){
+    if(!name){
+        console.log('Name not provided');
+        return null;
+    }
+    const value=process.env[name];
+    if(!value){
+        throw new Error('dotenv doesnot have the asked value');
+    }
+    return value;
+}
+export const credentials={
+    JWT_SECRET:getRequired('JWT_SECRET'),
+    HTTP_PORT:getRequired('HTTP_PORT'),
+    WS_PORT:getRequired('WS_PORT'),
+}

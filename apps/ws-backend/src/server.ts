@@ -1,87 +1,93 @@
 import { WebSocketServer, WebSocket } from "ws";
-import jwt from "jsonwebtoken";
-import { requiredInfo } from "@repo/backend-common/config";
+import { credentials } from "@repo/backend-common/config";
+import { verifyToken } from "@repo/backend-common/verifyToken";
+import { IPCheck } from "./helper/IPCheck";
 import { prismaClient } from "@repo/db/client";
 
-const wss = new WebSocketServer({ port: 5001 });
-
+const port = Number(credentials.WS_PORT);
+if (!port) {
+  throw new Error("No port name specified");
+}
 interface User {
   socket: WebSocket;
-  rooms: String[];
+  rooms: Number[];
   userId: String;
 }
 
 const users: User[] = [];
-function CheckUser(token: string): string | null {
-  try {
-    const decoded = jwt.verify(token, requiredInfo.JWT_SECRET);
-    if (typeof decoded == "string") {
-      return null;
-    }
-    if (!decoded || !decoded.id) {
-      return null;
-    }
-    return decoded.id;
-  } catch (err) {
-    return null;
-  }
-}
-
+const wss = new WebSocketServer({ port: port });
 wss.on("connection", (socket, request) => {
   const url = request.url;
-  if (!url) {
-    return;
-  }
+  if (!url) return;
   const queryParams = new URLSearchParams(url.split("?")[1]);
-  const token = queryParams.get("Token") || "";
-  const userId = CheckUser(token);
+  const token = queryParams.get("Token");
+  if (!token) return;
+  const userId = verifyToken(token);
 
   if (!userId) {
     socket.close();
-    return;
   }
-  socket.send(JSON.stringify("Joined"))
-  users.push({
-    socket,
-    rooms: [],
-    userId,
-  });
-  socket.on("message", async(data: string) => {
-    const parsedData = JSON.parse(data);
-    if (parsedData?.type === "join_room") {
-      const user = users.find((x) => x.socket === socket);
-      user?.rooms.push(parsedData.roomId);
+
+  socket.on("message", async (data: string) => {
+    const parsedData = IPCheck(data);
+    if (!parsedData) {
+      return socket.send(JSON.stringify({ message: "Invalid message type" }));
     }
-    if (parsedData.type === "leave_room") {
-      const user = users.find((x) => x.socket === socket);
-      if (!user) {
-        return;
-      }
-      user.rooms = user.rooms.filter((room) => room !== parsedData.roomId);
-    }
-    if (parsedData.type === "chat") {
-      const { roomId, message } = parsedData; //message checks
-      const Strmessage=JSON.stringify(message);
-      await prismaClient.chat.create({
-        data: {
-          roomId: Number(roomId),
-          message:Strmessage,
-          sentBy:userId
+    if (parsedData.type == "join-room") {
+      const roomId = parsedData.roomId;
+      let isPresent=false;
+      users.forEach((sObj) => {
+        if (sObj.socket === socket) {
+          sObj.rooms.push(roomId);
+          isPresent=true;
         }
       });
-      users.forEach((userObj) => {
-        if (userObj.rooms.includes(roomId)) {
-          userObj.socket.send(
+      if(!isPresent){
+        users.push({
+          socket:socket,
+          rooms:[roomId],
+          userId:userId
+        })
+      }
+      socket.send(JSON.stringify("joined-room"))
+    }
+    if (parsedData.type === "draw") {
+      const { shapeObj, roomId } = parsedData;
+      const shape=JSON.stringify(shapeObj);
+      for (const sObj of users) {
+        if (sObj.socket === socket) {
+          if (!sObj.rooms.includes(roomId)) {
+            return socket.send(JSON.stringify({message:"Join the room"}));
+          }
+          break;
+        }
+      }
+      const isSent = await prismaClient.shape.create({
+        data: {
+          shape,
+          roomId,
+          userId,
+        },
+      });
+      
+      if (!isSent) return;
+      users.forEach((sObj) => {
+        if (sObj.rooms.includes(roomId)) {
+          sObj.socket.send(
             JSON.stringify({
-              message: message,
-              roomId,
+              shape: shape,
+              roomId: roomId,
             })
           );
         }
       });
     }
   });
-  socket.on("close", () => {
-    console.log("socket closed");
-  });
+  socket.onclose = () => {
+    users.forEach((sObj, index) => {
+      if (sObj.socket === socket) {
+        users.splice(index, 1);
+      }
+    });
+  };
 });

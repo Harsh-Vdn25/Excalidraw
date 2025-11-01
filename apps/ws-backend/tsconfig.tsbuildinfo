@@ -1,1 +1,1 @@
-{"root":["./src/server.ts"],"version":"5.9.2"}
+{"root":["./src/server.ts","./src/helper/ipcheck.ts"],"version":"5.9.2"}

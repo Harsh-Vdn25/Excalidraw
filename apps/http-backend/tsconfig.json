@@ -1,11 +1,7 @@
 {
-  "extends": "@repo/typescript-config/base.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "baseUrl": ".",
-    "paths": {
-      "@helper/*":["../helper/*"]
+    "extends":"@repo/typescript-config/base.json",
+    "compilerOptions":{
+        "rootDir":"./src",
+        "outDir":"./dist"
     }
-  }
 }
