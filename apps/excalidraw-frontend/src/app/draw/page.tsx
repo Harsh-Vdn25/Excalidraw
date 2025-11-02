@@ -2,13 +2,13 @@
 import { useRef, useEffect, useState, type RefObject, useContext } from "react";
 import { AuthContext } from "../context/AuthProvider";
 import { Game } from "./Game";
-import { CircleIcon, HandIcon, PencilIcon, SquareIcon } from "lucide-react";
+import { CircleIcon, HandIcon, PencilIcon, SearchIcon, SquareIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 
-export type shape = "rect" | "circle" | "pencil"|"pan";
+export type shape = "rect" | "circle" | "pencil"|"pan"|"zoomIn"|"zoomOut";
 export default function CanvasPage({ roomId }: { roomId: number }) {
   const canvasRef = useRef(null);
   const socketRef: RefObject<WebSocket | null> = useRef(null);
-  const [selectedTool, setSelectedTool] = useState<shape>("pan");
+  const [selectedTool, setSelectedTool] = useState<shape>("rect");
   const [game, setGame] = useState<Game>();
   const [canvasWidth,setCanvasWidth]=useState<Number>(Number(window.innerWidth));
   const [canvasHeight,setCanvasHeight]=useState<Number>(Number(window.innerHeight));
@@ -22,7 +22,7 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
   if (!wsURL) {
     throw new Error("Missing NEXT_PUBLIC_APIURL in environment");
   }
-  
+
   useEffect(() => {
     if (!canvasRef.current) return;
     const ws = new WebSocket(
@@ -77,7 +77,7 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
           ? "bg-red-100 border-2 border-red-500"
           : "border border-gray-400 hover:border-red-400 hover:bg-red-50"
       }`}
-          stroke="red"
+          stroke="black"
         />
 
         <SquareIcon
@@ -90,7 +90,7 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
           ? "bg-blue-100 border-2 border-blue-500"
           : "border border-gray-400 hover:border-blue-400 hover:bg-blue-50"
       }`}
-          stroke="blue"
+          stroke="black"
         />
 
         <PencilIcon
@@ -106,7 +106,7 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
           ? "bg-green-100 border-2 border-green-500"
           : "border border-gray-400 hover:border-green-400 hover:bg-green-50"
       }`}
-          stroke="green"
+          stroke="black"
         />
         <HandIcon size={32}
           strokeWidth={2.5}
@@ -120,6 +120,32 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
           : "border border-gray-400 hover:border-green-400 hover:bg-green-50"
       }`}
           stroke="black"/>
+        <ZoomInIcon size={32}
+          strokeWidth={2.5}
+          onClick={() => {
+            setSelectedTool("zoomIn");
+          }}
+          className={`p-1 rounded-full cursor-pointer transition-all duration-200 
+      ${
+        selectedTool === "zoomIn"
+          ? "bg-green-100 border-2 border-green-500"
+          : "border border-gray-400 hover:border-green-400 hover:bg-green-50"
+      }`}
+          stroke="black"
+        />
+        <ZoomOutIcon size={32}
+          strokeWidth={2.5}
+          onClick={() => {
+            setSelectedTool("zoomOut");
+          }}
+          className={`p-1 rounded-full cursor-pointer transition-all duration-200 
+      ${
+        selectedTool === "zoomOut"
+          ? "bg-green-100 border-2 border-green-500"
+          : "border border-gray-400 hover:border-green-400 hover:bg-green-50"
+      }`}
+          stroke="black"
+        />
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export class Game {
   private centerX = 0;
   private centerY = 0;
   private radius = 0;
-  private selectedTool: shape = "pan";
+  private selectedTool: shape = "rect";
   private socket;
   private points:CoordinateType[]=[];
   private pointSize=3;
@@ -65,7 +65,16 @@ export class Game {
     this.paintCanvas();
   }
   setTool=(selectedTool: shape)=> {
+    this.canvas.removeEventListener('wheel',this.updateZooming);
+    this.viewportTransformation={
+      x:0,
+      y:0,
+      scale:1
+    }
     this.selectedTool = selectedTool;
+    if(this.selectedTool==='zoomIn'||this.selectedTool==='zoomOut'){
+      this.canvas.addEventListener('wheel',this.updateZooming);
+    }
   }
 
   reDraw(){
@@ -86,6 +95,25 @@ export class Game {
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
     this.canvas.addEventListener("mousemove", this.handleMousemove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
+  }
+
+  updateZooming=(e:WheelEvent)=>{
+    const oldX=this.viewportTransformation.x;
+    const oldY=this.viewportTransformation.y;
+    const oldScale=this.viewportTransformation.scale;
+
+    const localX=e.clientX;
+    const localY=e.clientY;
+
+    const newScale=(this.viewportTransformation.scale+=e.deltaY);
+
+    const newX=localX-(localX-oldX)*(newScale/oldScale);
+    const newY=localY-(localY-oldY)*(newScale/oldScale);
+
+    this.viewportTransformation.x=newX;
+    this.viewportTransformation.y=newY;
+    this.viewportTransformation.scale=newScale;
+    this.paintCanvas();
   }
   handleMouseDown=(e: MouseEvent)=> {
     this.startX = e.clientX;
@@ -108,10 +136,8 @@ export class Game {
       this.ctx.closePath();
     }
     if(this.selectedTool==='pencil'){
-      const initX=e.clientX;
-      const initY=e.clientY;
-      const x=initX+this.viewportTransformation.x;
-      const y=initY+this.viewportTransformation.y;
+      const x=e.clientX;
+      const y=e.clientY;
       this.points.push({x,y})
       this.ctx.fillStyle='green';
       this.points.map((point)=>{
@@ -122,11 +148,13 @@ export class Game {
       })
     }
     if(this.selectedTool==='pan'){
+       if(this.viewportTransformation.scale<=1) return; //Allowing panning the zoomed screen
         const dx = e.clientX - this.startX;
         const dy = e.clientY - this.startY;
 
         this.viewportTransformation.x += dx;
         this.viewportTransformation.y += dy;
+        console.log(e.pageX,e.pageY)
 
         this.startX = e.clientX;
         this.startY = e.clientY;
@@ -181,7 +209,9 @@ export class Game {
   paintCanvas=()=> {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "black";
-    this.ctx.setTransform(1,0,0,1,0,0);
+    
+    if(this.viewportTransformation.scale>=1){
+      this.ctx.setTransform(1,0,0,1,0,0);
     this.ctx.setTransform(
         this.viewportTransformation.scale,
         0,
@@ -190,6 +220,7 @@ export class Game {
         this.viewportTransformation.x,
         this.viewportTransformation.y
       );
+    }
     this.existingShapes.map((shape:shapeType)=>{
         if (shape.type === "rect") {
         this.ctx.strokeStyle = "blue";
