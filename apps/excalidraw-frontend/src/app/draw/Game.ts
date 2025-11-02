@@ -118,26 +118,18 @@ export class Game {
         this.ctx.beginPath();
         this.ctx.arc(point.x,point.y,this.pointSize,0,2*Math.PI,true);
         this.ctx.fill();
+        console.log(point.x,point.y)
       })
     }
     if(this.selectedTool==='pan'){
-      const localX=e.clientX;
-      const localY=e.clientX;
-      this.viewportTransformation.x=localX-this.startX;
-      this.viewportTransformation.y=localY-this.startY;
-      this.startX=localX;
-      this.startY=localY;
-      console.log(this.startX,localX)
-      this.ctx.setTransform(1,0,0,1,0,0);
-      this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-      this.ctx.setTransform(
-        this.viewportTransformation.scale,
-        0,
-        0,
-        this.viewportTransformation.scale,
-        this.viewportTransformation.x,
-        this.viewportTransformation.y
-      );
+        const dx = e.clientX - this.startX;
+        const dy = e.clientY - this.startY;
+
+        this.viewportTransformation.x += dx;
+        this.viewportTransformation.y += dy;
+
+        this.startX = e.clientX;
+        this.startY = e.clientY;
       this.paintCanvas();
     }
   }
@@ -189,7 +181,15 @@ export class Game {
   paintCanvas=()=> {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "black";
-    
+    this.ctx.setTransform(1,0,0,1,0,0);
+    this.ctx.setTransform(
+        this.viewportTransformation.scale,
+        0,
+        0,
+        this.viewportTransformation.scale,
+        this.viewportTransformation.x,
+        this.viewportTransformation.y
+      );
     this.existingShapes.map((shape:shapeType)=>{
         if (shape.type === "rect") {
         this.ctx.strokeStyle = "blue";

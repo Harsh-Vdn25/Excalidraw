@@ -22,11 +22,11 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
   if (!wsURL) {
     throw new Error("Missing NEXT_PUBLIC_APIURL in environment");
   }
-
+  
   useEffect(() => {
     if (!canvasRef.current) return;
     const ws = new WebSocket(
-      `${wsURL}?Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmNWQ4YzI2Ny1lYmZlLTQ5YWUtYjVkNy1iYWU0NDg3ZmIxY2MiLCJpYXQiOjE3NjE5MzMxNzl9.fVGajRu478MTV_W9VM2xhAtc7TO4h7_SrJTURM0hwzM`
+      `${wsURL}?Token=${Token}`
     );
     socketRef.current = ws;
     const socket = socketRef.current;
