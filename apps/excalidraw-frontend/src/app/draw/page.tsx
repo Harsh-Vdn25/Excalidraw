@@ -2,14 +2,16 @@
 import { useRef, useEffect, useState, type RefObject, useContext } from "react";
 import { AuthContext } from "../context/AuthProvider";
 import { Game } from "./Game";
-import { CircleIcon, PencilIcon, SquareIcon } from "lucide-react";
+import { CircleIcon, HandIcon, PencilIcon, SquareIcon } from "lucide-react";
 
-export type shape = "rect" | "circle" | "pencil";
+export type shape = "rect" | "circle" | "pencil"|"pan";
 export default function CanvasPage({ roomId }: { roomId: number }) {
   const canvasRef = useRef(null);
   const socketRef: RefObject<WebSocket | null> = useRef(null);
-  const [selectedTool, setSelectedTool] = useState<shape>("rect");
+  const [selectedTool, setSelectedTool] = useState<shape>("pan");
   const [game, setGame] = useState<Game>();
+  const [canvasWidth,setCanvasWidth]=useState<Number>(Number(window.innerWidth));
+  const [canvasHeight,setCanvasHeight]=useState<Number>(Number(window.innerHeight));
   const authcontext = useContext(AuthContext);
   if (!authcontext) {
     throw new Error("");
@@ -36,26 +38,35 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
         })
       );
     };
+    window.addEventListener('resize',windowreSize);
     const g = new Game(canvasRef.current, roomId, socketRef);
     setGame(g);
     return () => {
       g.destroy();
+      window.removeEventListener('resize',windowreSize);
     };
   }, [canvasRef]);
 
   useEffect(() => {
     game?.setTool(selectedTool);
   }, [selectedTool]);
+
+  function windowreSize(){
+    setCanvasHeight(window.innerHeight);
+    setCanvasWidth(window.innerWidth);
+    game?.reDraw();
+  }
+
   return (
     <div className="w-screen h-screen bg-white">
       <canvas
         ref={canvasRef}
-        width={900}
-        height={600}
+        width={canvasWidth}
+        height={canvasHeight}
         className="bg-black relative"
       ></canvas>
-      <div className="absolute top-2 left-2 p-3 flex gap-3 bg-white/80 backdrop-blur-md rounded-xl shadow-lg border border-gray-200">
-        {/* Circle Tool */}
+      <div className="absolute top-2 left-2 p-3 flex gap-3 bg-gray-600 backdrop-blur-md rounded-xl shadow-lg border border-gray-700">
+
         <CircleIcon
           size={32}
           strokeWidth={2.5}
@@ -97,6 +108,18 @@ export default function CanvasPage({ roomId }: { roomId: number }) {
       }`}
           stroke="green"
         />
+        <HandIcon size={32}
+          strokeWidth={2.5}
+          onClick={() => {
+            setSelectedTool("pan");
+          }}
+          className={`p-1 rounded-full cursor-pointer transition-all duration-200 
+      ${
+        selectedTool === "pan"
+          ? "bg-green-100 border-2 border-green-500"
+          : "border border-gray-400 hover:border-green-400 hover:bg-green-50"
+      }`}
+          stroke="black"/>
       </div>
     </div>
   );

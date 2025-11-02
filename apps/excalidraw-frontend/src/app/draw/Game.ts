@@ -36,10 +36,15 @@ export class Game {
   private centerX = 0;
   private centerY = 0;
   private radius = 0;
-  private selectedTool: shape = "rect";
+  private selectedTool: shape = "pan";
   private socket;
   private points:CoordinateType[]=[];
   private pointSize=3;
+  private viewportTransformation={
+    x:0,
+    y:0,
+    scale:1
+  }
   constructor(
     canvas: HTMLCanvasElement,
     roomId: number,
@@ -63,6 +68,9 @@ export class Game {
     this.selectedTool = selectedTool;
   }
 
+  reDraw(){
+    this.paintCanvas();
+  }
   initHandlers=()=> {
     if(!this.socket)return;
     this.socket.onmessage=(e)=>{
@@ -100,8 +108,10 @@ export class Game {
       this.ctx.closePath();
     }
     if(this.selectedTool==='pencil'){
-      const x=e.clientX;
-      const y=e.clientY;
+      const initX=e.clientX;
+      const initY=e.clientY;
+      const x=initX+this.viewportTransformation.x;
+      const y=initY+this.viewportTransformation.y;
       this.points.push({x,y})
       this.ctx.fillStyle='green';
       this.points.map((point)=>{
@@ -110,11 +120,32 @@ export class Game {
         this.ctx.fill();
       })
     }
+    if(this.selectedTool==='pan'){
+      const localX=e.clientX;
+      const localY=e.clientX;
+      this.viewportTransformation.x=localX-this.startX;
+      this.viewportTransformation.y=localY-this.startY;
+      this.startX=localX;
+      this.startY=localY;
+      console.log(this.startX,localX)
+      this.ctx.setTransform(1,0,0,1,0,0);
+      this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+      this.ctx.setTransform(
+        this.viewportTransformation.scale,
+        0,
+        0,
+        this.viewportTransformation.scale,
+        this.viewportTransformation.x,
+        this.viewportTransformation.y
+      );
+      this.paintCanvas();
+    }
   }
   handleMouseUp=(e: MouseEvent)=> {
     const width = e.clientX - this.startX;
     const height = e.clientY - this.startY;
     this.clicked=false;
+    if(this.selectedTool==='pan')return;
     if (this.selectedTool === "rect") {
         this.socket?.send(JSON.stringify({
             type: "draw",
@@ -141,7 +172,7 @@ export class Game {
           },
         }));
     }
-    if(this.selectedTool==='pencil'){
+    if(this.selectedTool === 'pencil'){
       this.socket?.send(JSON.stringify({
         type:"draw",
         roomId:this.roomId,
@@ -158,9 +189,8 @@ export class Game {
   paintCanvas=()=> {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "black";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    this.existingShapes.map((shape:shapeType,index)=>{
+    
+    this.existingShapes.map((shape:shapeType)=>{
         if (shape.type === "rect") {
         this.ctx.strokeStyle = "blue";
         this.ctx.strokeRect(shape.startX, shape.startY, shape.width, shape.height);
@@ -178,7 +208,6 @@ export class Game {
         this.ctx.closePath();
       }else{
         this.ctx.fillStyle='green';
-        console.log(shape);
         shape.coordinates.map((point)=>{
         this.ctx.beginPath();
         this.ctx.arc(point.x,point.y,this.pointSize,0,2*Math.PI,true);
